@@ -26,3 +26,4 @@ mlartifacts/
 
 .env
 *.log
+.DS_Store
