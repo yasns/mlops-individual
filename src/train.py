@@ -1,9 +1,10 @@
-"""Train the fraud-detection model with MLflow tracking.
+"""Train the Spotify hit-prediction model with MLflow tracking.
 
-  python src/train.py                    # hyper-parameters from params.yaml
-  python src/train.py --n_estimators 300 # override one of them
-  dvc repro                              # via the pipeline: records hashes in dvc.lock, produces an MLflow run
+python src/train.py                    # hyper-parameters from params.yaml
+python src/train.py --n_estimators 300 # override one of them
+dvc repro                              # via the pipeline: records hashes in dvc.lock, produces an MLflow run
 """
+
 import argparse
 import os
 import subprocess
@@ -47,7 +48,7 @@ def main() -> None:
         if value is not None:
             params[key] = value
 
-    mlflow.set_experiment(os.environ.get("MLFLOW_EXPERIMENT_NAME", "fraud-detection"))
+    mlflow.set_experiment(os.environ.get("MLFLOW_EXPERIMENT_NAME", "spotify-hits"))
 
     train = pd.read_csv(ROOT / "data/processed/train.csv")
     test = pd.read_csv(ROOT / "data/processed/test.csv")
@@ -56,13 +57,15 @@ def main() -> None:
 
     run_name = f"rf-n{params['n_estimators']}-d{params['max_depth']}"
     with mlflow.start_run(run_name=run_name) as run:
-        mlflow.log_params(params)                                   # config, incl. the seed
-        mlflow.set_tags({                                           # identities
-            "git_commit": git_commit(),
-            "dvc_raw_md5": dvc_md5(ROOT / "data/raw/dataset.csv.dvc"),
-            "model_family": "RandomForestClassifier",
-        })
-        mlflow.log_input(                                           # data provenance (name + digest)
+        mlflow.log_params(params)  # config, incl. the seed
+        mlflow.set_tags(
+            {  # identities
+                "git_commit": git_commit(),
+                "dvc_raw_md5": dvc_md5(ROOT / "data/raw/data.parquet.dvc"),
+                "model_family": "RandomForestClassifier",
+            }
+        )
+        mlflow.log_input(  # data provenance (name + digest)
             mlflow.data.from_pandas(
                 train, source="data/processed/train.csv", targets="target", name="train"
             ),
@@ -79,16 +82,25 @@ def main() -> None:
         acc = accuracy_score(y_test, preds)
         f1 = f1_score(y_test, preds, average="weighted")
 
-        info = mlflow.sklearn.log_model(                            # model + environment files
-            model, name="model", input_example=x_train.head(3)
+        info = mlflow.sklearn.log_model(  # model + environment files
+            model,
+            name="model",
+            input_example=x_train.head(3),
+            skops_trusted_types=["sklearn.tree._tree.Tree"],  # we trained it ourselves
         )
-        mlflow.log_metric("accuracy", acc, model_id=info.model_id)  # metric <-> model link
+        mlflow.log_metric(
+            "accuracy", acc, model_id=info.model_id
+        )  # metric <-> model link
         mlflow.log_metric("f1", f1, model_id=info.model_id)
 
         os.makedirs(ROOT / "models", exist_ok=True)
-        joblib.dump(model, ROOT / "models/model.pkl")               # DVC-tracked artefact for later weeks
+        joblib.dump(
+            model, ROOT / "models/model.pkl"
+        )  # DVC-tracked artefact for later weeks
         (ROOT / "models/run_id.txt").write_text(run.info.run_id + "\n")
-        print(f"run_id={run.info.run_id} model_id={info.model_id} accuracy={acc:.4f} f1={f1:.4f}")
+        print(
+            f"run_id={run.info.run_id} model_id={info.model_id} accuracy={acc:.4f} f1={f1:.4f}"
+        )
 
 
 if __name__ == "__main__":

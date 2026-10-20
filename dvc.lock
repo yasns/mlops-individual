@@ -1,0 +1,88 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: python src/prepare.py
+    deps:
+    - path: data/raw/data.parquet
+      hash: md5
+      md5: 53ec3893186919262943b88e36f01aa0
+      size: 9350164
+    - path: src/prepare.py
+      hash: md5
+      md5: 52f68b18d224cf3e195f348dd1016d76
+      size: 1272
+    params:
+      params.yaml:
+        data:
+          target: popularity
+          threshold: 50
+          drop:
+          - track_id
+          - artists
+          - album_name
+          - track_name
+          test_size: 0.2
+          seed: 42
+    outs:
+    - path: data/processed/test.csv
+      hash: md5
+      md5: d3ffc84b143310f53038c074c637c7de
+      size: 5412701
+    - path: data/processed/train.csv
+      hash: md5
+      md5: 7c6c23c20a41e2f4a4daed78a08ee0f5
+      size: 21641732
+  train:
+    cmd: python src/train.py
+    deps:
+    - path: data/processed/test.csv
+      hash: md5
+      md5: d3ffc84b143310f53038c074c637c7de
+      size: 5412701
+    - path: data/processed/train.csv
+      hash: md5
+      md5: 7c6c23c20a41e2f4a4daed78a08ee0f5
+      size: 21641732
+    - path: src/train.py
+      hash: md5
+      md5: bbe576679e5d067a4b992a9f8da6984b
+      size: 3709
+    params:
+      params.yaml:
+        train:
+          n_estimators: 100
+          max_depth: 8
+          random_seed: 42
+    outs:
+    - path: models/model.pkl
+      hash: md5
+      md5: c848cca4c44a7a104990b6669992d926
+      size: 1922937
+    - path: models/run_id.txt
+      hash: md5
+      md5: 8366b4e32dba6923b1c9fa591e891f70
+      size: 33
+  evaluate:
+    cmd: python src/evaluate.py
+    deps:
+    - path: data/processed/test.csv
+      hash: md5
+      md5: d3ffc84b143310f53038c074c637c7de
+      size: 5412701
+    - path: models/model.pkl
+      hash: md5
+      md5: c848cca4c44a7a104990b6669992d926
+      size: 1922937
+    - path: models/run_id.txt
+      hash: md5
+      md5: 8366b4e32dba6923b1c9fa591e891f70
+      size: 33
+    - path: src/evaluate.py
+      hash: md5
+      md5: fe25ac0ed74eb85e90e19a52bad8d48d
+      size: 1485
+    outs:
+    - path: metrics.json
+      hash: md5
+      md5: df176d7a1cece32a3d0fca7c290da396
+      size: 132
