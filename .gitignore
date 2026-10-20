@@ -1,0 +1,28 @@
+.venv/
+.venv-bootstrap/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+
+# raw data is tracked by DVC (dataset.csv.dvc is committed instead of the bytes)
+data/raw/*.csv
+data/raw/*.parquet
+# pipeline outputs are restored from the DVC cache
+data/processed/
+models/*.pkl
+models/*.onnx
+
+# MLflow server state (metadata DB + artifact store)
+mlruns/
+mlflow.db
+mlartifacts/
+
+# DVC internals; .dvc/config is NOT ignored - the remote configuration lives in Git
+.dvc/cache/
+.dvc/tmp/
+
+# kept in Git on purpose: .dvc/config, dvc.lock, metrics.json, models/run_id.txt
+
+.env
+*.log

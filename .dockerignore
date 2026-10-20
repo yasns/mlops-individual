@@ -1,0 +1,21 @@
+# Keep build context small; copy models explicitly in the runtime Dockerfiles.
+.git
+.github
+.venv*
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.env
+.env.*
+*.pem
+*.key
+.dvc
+mlruns
+mlartifacts
+mlflow.db
+data
+docs
+*.log
+*.ipynb
