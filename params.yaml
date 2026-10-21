@@ -5,6 +5,6 @@ data:
   test_size: 0.2
   seed: 42
 train:
-  n_estimators: 100
+  n_estimators: 300
   max_depth: 8
   random_seed: 42
