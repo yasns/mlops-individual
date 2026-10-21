@@ -15,7 +15,7 @@ import mlflow
 import yaml
 
 ROOT = Path(__file__).resolve().parent
-TRAIN_KEYS = {"n_estimators": int, "max_depth": int, "random_seed": int}
+TRAIN_KEYS = {"C": float, "max_iter": int}
 
 
 def sh(*cmd: str) -> None:

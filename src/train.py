@@ -1,7 +1,7 @@
 """Train the Spotify hit-prediction model with MLflow tracking.
 
 python src/train.py                    # hyper-parameters from params.yaml
-python src/train.py --n_estimators 300 # override one of them
+python src/train.py --C 0.1            # override one of them
 dvc repro                              # via the pipeline: records hashes in dvc.lock, produces an MLflow run
 """
 
@@ -15,8 +15,10 @@ import mlflow
 import mlflow.sklearn
 import pandas as pd
 import yaml
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -41,9 +43,8 @@ def dvc_md5(dvc_file: Path) -> str:
 def main() -> None:
     params = yaml.safe_load((ROOT / "params.yaml").read_text())["train"]
     parser = argparse.ArgumentParser()
-    parser.add_argument("--n_estimators", type=int)
-    parser.add_argument("--max_depth", type=int)
-    parser.add_argument("--random_seed", type=int)
+    parser.add_argument("--C", type=float)
+    parser.add_argument("--max_iter", type=int)
     for key, value in vars(parser.parse_args()).items():
         if value is not None:
             params[key] = value
@@ -55,14 +56,14 @@ def main() -> None:
     x_train, y_train = train.drop("target", axis=1), train["target"]
     x_test, y_test = test.drop("target", axis=1), test["target"]
 
-    run_name = f"rf-n{params['n_estimators']}-d{params['max_depth']}"
+    run_name = f"logreg-C{params['C']}"
     with mlflow.start_run(run_name=run_name) as run:
-        mlflow.log_params(params)  # config, incl. the seed
+        mlflow.log_params(params)  # config
         mlflow.set_tags(
             {  # identities
                 "git_commit": git_commit(),
                 "dvc_raw_md5": dvc_md5(ROOT / "data/raw/data.parquet.dvc"),
-                "model_family": "RandomForestClassifier",
+                "model_family": "LogisticRegression",
             }
         )
         mlflow.log_input(  # data provenance (name + digest)
@@ -72,10 +73,11 @@ def main() -> None:
             context="training",
         )
 
-        model = RandomForestClassifier(
-            n_estimators=params["n_estimators"],
-            max_depth=params["max_depth"],
-            random_state=params["random_seed"],
+        model = make_pipeline(
+            StandardScaler(),  # standardize features
+            LogisticRegression(
+                C=params["C"], max_iter=params["max_iter"]
+            ),  # deterministic, no seed needed
         )
         model.fit(x_train, y_train)
         preds = model.predict(x_test)
@@ -86,7 +88,6 @@ def main() -> None:
             model,
             name="model",
             input_example=x_train.head(3),
-            skops_trusted_types=["sklearn.tree._tree.Tree"],  # we trained it ourselves
         )
         mlflow.log_metric(
             "accuracy", acc, model_id=info.model_id
