@@ -43,7 +43,7 @@ print(
     f"TPR gap: {gap:.2f} ({g.index[0]} {g.tpr.iloc[0]:.2f} .. {g.index[-1]} {g.tpr.iloc[-1]:.2f})"
 )
 passed = bool(gap <= THRESHOLD)
-print("NFR-07:", "PASS" if passed else "FAIL")
+print("NFR-08:", "PASS" if passed else "FAIL")
 
 sha = subprocess.check_output(
     ["git", "rev-parse", "--short=8", "HEAD"], cwd=ROOT, text=True

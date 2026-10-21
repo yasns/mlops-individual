@@ -1,9 +1,12 @@
-"""Evaluate models/model.pkl on the test split -> metrics.json (+ attach eval metrics to the training run)."""
+"""
+Evaluate models/model.pkl on the test split -> metrics.json
+MLflow metrics logged by train.py
+"""
+
 import json
 from pathlib import Path
 
 import joblib
-import mlflow
 import pandas as pd
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
@@ -21,17 +24,8 @@ def main() -> None:
         "precision": precision_score(y, preds),
         "recall": recall_score(y, preds),
     }
-    (ROOT / "metrics.json").write_text(json.dumps(metrics, indent=2) + "\n")   # read by week 6's gate
+    (ROOT / "metrics.json").write_text(json.dumps(metrics, indent=2) + "\n")
     print(json.dumps(metrics, indent=2))
-
-    run_id_file = ROOT / "models/run_id.txt"
-    if run_id_file.exists():                                   # lineage: evaluation lands on the training run
-        try:
-            client = mlflow.MlflowClient()
-            for key, value in metrics.items():
-                client.log_metric(run_id_file.read_text().strip(), f"eval/{key}", value)
-        except Exception as exc:                               # best-effort: run may live on an unreachable server
-            print(f"warning: eval metrics not attached to the training run ({exc})")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 data:
   target: popularity
   threshold: 50 # popularity >= threshold -> class 1 ("hit")
-  drop: [track_id, artists, album_name, track_name] # would run out of memory otherwise, keep track_genre
+  drop: ["Unnamed: 0", track_id, artists, album_name, track_name] # would run out of memory otherwise, keep track_genre
   test_size: 0.2
   seed: 42
 train:

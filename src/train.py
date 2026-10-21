@@ -16,7 +16,7 @@ import mlflow.sklearn
 import pandas as pd
 import yaml
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
@@ -43,8 +43,8 @@ def dvc_md5(dvc_file: Path) -> str:
 def main() -> None:
     params = yaml.safe_load((ROOT / "params.yaml").read_text())["train"]
     parser = argparse.ArgumentParser()
-    parser.add_argument("--C", type=float)
-    parser.add_argument("--max_iter", type=int)
+    for key, value in params.items():
+        parser.add_argument(f"--{key}", type=type(value))
     for key, value in vars(parser.parse_args()).items():
         if value is not None:
             params[key] = value
@@ -74,25 +74,24 @@ def main() -> None:
         )
 
         model = make_pipeline(
-            StandardScaler(),  # standardize features
-            LogisticRegression(
-                C=params["C"], max_iter=params["max_iter"]
-            ),  # deterministic, no seed needed
+            StandardScaler(),
+            LogisticRegression(C=params["C"], max_iter=params["max_iter"]),
         )
         model.fit(x_train, y_train)
         preds = model.predict(x_test)
-        acc = accuracy_score(y_test, preds)
-        f1 = f1_score(y_test, preds, average="weighted")
+        metrics = {
+            "accuracy": accuracy_score(y_test, preds),
+            "f1": f1_score(y_test, preds, average="weighted"),
+            "precision": precision_score(y_test, preds),
+            "recall": recall_score(y_test, preds),
+        }
 
         info = mlflow.sklearn.log_model(  # model + environment files
             model,
             name="model",
             input_example=x_train.head(3),
         )
-        mlflow.log_metric(
-            "accuracy", acc, model_id=info.model_id
-        )  # metric <-> model link
-        mlflow.log_metric("f1", f1, model_id=info.model_id)
+        mlflow.log_metrics(metrics, model_id=info.model_id)  # metric <-> model link
 
         os.makedirs(ROOT / "models", exist_ok=True)
         joblib.dump(
@@ -100,7 +99,7 @@ def main() -> None:
         )  # DVC-tracked artefact for later weeks
         (ROOT / "models/run_id.txt").write_text(run.info.run_id + "\n")
         print(
-            f"run_id={run.info.run_id} model_id={info.model_id} accuracy={acc:.4f} f1={f1:.4f}"
+            f"run_id={run.info.run_id} model_id={info.model_id} accuracy={metrics['accuracy']:.4f} f1={metrics['f1']:.4f}"
         )
 
 

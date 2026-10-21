@@ -15,7 +15,6 @@ import mlflow
 import yaml
 
 ROOT = Path(__file__).resolve().parent
-TRAIN_KEYS = {"C": float, "max_iter": int}
 
 
 def sh(*cmd: str) -> None:
@@ -46,16 +45,10 @@ def main() -> None:
         # 2. exact data bytes from the cache - only the .dvc pointer files: the historical
         #    commit predates its dvc.lock (the lock is committed after the run), so the
         #    pipeline outputs cannot be restored - they are rebuilt by `dvc repro` below.
-        pointers = [
-            str(p.relative_to(ROOT))
-            for p in ROOT.rglob("*.dvc")
-            if p.is_file() and p.name != ".dvc"
-        ]
-        if pointers:
-            sh("dvc", "checkout", "--force", *pointers)
+        sh("dvc", "checkout", "--force", "data/raw/data.parquet.dvc")
 
         cfg = yaml.safe_load((ROOT / "params.yaml").read_text())  # 3. same hyper-parameters
-        cfg["train"].update({k: cast(params[k]) for k, cast in TRAIN_KEYS.items() if k in params})
+        cfg["train"].update({k: type(v)(params[k]) for k, v in cfg["train"].items() if k in params})
         (ROOT / "params.yaml").write_text(yaml.safe_dump(cfg, sort_keys=False))
 
         sh("dvc", "repro", "--force")                       # 4. re-run the DAG -> train.py logs a new run

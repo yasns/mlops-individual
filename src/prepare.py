@@ -15,8 +15,7 @@ def main() -> None:
 
     # drop duplicate songs if present, otherwise they leak into test
     df = df.drop_duplicates(subset="track_id")
-    index_cols = [c for c in df.columns if c.startswith("Unnamed")]
-    df = df.drop(columns=p["drop"] + index_cols, errors="ignore").dropna()
+    df = df.drop(columns=p["drop"], errors="ignore").dropna()
 
     y = (df[p["target"]] >= p["threshold"]).astype(int)
     x = pd.get_dummies(df.drop(columns=[p["target"]]), dtype=int)
