@@ -1,5 +1,5 @@
 # Projekto reikalavimai
-Versija: 1.1  
+Versija: 1.2  
 Data: 2026-10-21  
 Autoriai: Matas Jasiūnas (@yasns)  
 
@@ -16,7 +16,7 @@ Sistema prognozuoja, ar Spotify kūrinys yra "hitas" (`popularity >= 50`) arba "
 ## 3. Nefunkciniai reikalavimai (NFR)
 | ID | Kategorija | Reikalavimas | Metrika/KPI |
 |--------|---------------|---------------------------|--------------------|
-| NFR-01 | Kokybė | Modelio pažymėti hitai dažniausiai yra tikri hitai | Precision ≥ 0,80 |
+| NFR-01 | Kokybė | Modelis randa didelę dalį hitų, pažymėtų sąrašas lieka naudingas | Recall ≥ 0,30; Precision ≥ 0,60 |
 | NFR-02 | Atkartojamumas | Istorinis run'as atkuriamas greitai ir tiksliai | Atkūrimo trukmė ≤ 120 s; Δ accuracy ≤ 0,005 |
 | NFR-03 | Atsekamumas | Kiekvienas run'as susietas su kodu ir duomenimis | Run'ų su `git_commit` ir `dvc_raw_md5` žymomis = 100 % |
 | NFR-04 | Patvarumas | MLflow duomenys išlieka perkūrus Pod'ą | Prarastų run'ų = 0 |
@@ -30,3 +30,4 @@ Sistema prognozuoja, ar Spotify kūrinys yra "hitas" (`popularity >= 50`) arba "
 |---------|------------|----------|--------------------|
 | 1.0 | 2026-10-21 | M. Jasiūnas | Pradinis dokumentas. Problemos aprašymas, FR-01..03, NFR-01..07 |
 | 1.1 | 2026-10-21 | M. Jasiūnas | Sąžiningumas. NFR-08 |
+| 1.2 | 2026-10-21 | M. Jasiūnas | Modelis pakeistas į LogisticRegression. Atnaujintas NFR-01 |
