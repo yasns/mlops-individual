@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: train
+  namespace: mlops
+spec:
+  backoffLimit: 1
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: train
+          image: ghcr.io/yasns/u1-train:sha-a830574 # pinned
+          env:
+            - name: MLFLOW_TRACKING_URI
+              value: http://mlflow.mlops.svc.cluster.local:5000
+            - name: HOME
+              value: /tmp
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -e
+              python src/fetch_data.py
+              python src/prepare.py
+              python src/train.py
+          resources:
+            requests: { cpu: "500m", memory: "1Gi" }
+            limits: { cpu: "2", memory: "2Gi" }

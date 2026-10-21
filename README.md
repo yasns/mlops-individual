@@ -53,6 +53,14 @@ time python reproduce.py <run_id>
 ```
 Atkuria to run'o kodą (git), duomenis (DVC) ir parametrus, perleidžia pipeline'ą ir palygina metrikas. UI atsiranda naujas run'as su žyma `reproduces=<run_id>`.
 
+### 7. Mokymas klasteryje naudojant Kubernetes Job
+```bash
+kubectl delete job train -n mlops --ignore-not-found
+kubectl apply -f k8s/train-job.yaml
+kubectl logs -n mlops -f job/train
+```
+Pod'as iš `ghcr.io/yasns/u1-train` vaizdo atsisiunčia duomenis, paleidžia `prepare` -> `train` ir log'ina run'ą į klasterio MLflow.
+
 ## Rezultatai
 | Kas | Kur |
 |-----|-----|

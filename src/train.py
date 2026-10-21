@@ -24,6 +24,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def git_commit() -> str:
+    if "GIT_COMMIT" in os.environ:
+        return os.environ["GIT_COMMIT"]
     try:
         return subprocess.check_output(
             ["git", "rev-parse", "--short=8", "HEAD"], cwd=ROOT, text=True
