@@ -11,8 +11,10 @@ spec:
       restartPolicy: Never
       containers:
         - name: train
-          image: ghcr.io/yasns/u1-train:sha-a830574 # pinned
+          image: ghcr.io/yasns/u1-train:sha-7983c97 # pinned
           env:
+            - name: GIT_COMMIT # = image tag, lets reproduce.py check out this code
+              value: 7983c97
             - name: MLFLOW_TRACKING_URI
               value: http://mlflow.mlops.svc.cluster.local:5000
             - name: HOME

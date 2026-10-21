@@ -1,1 +1,1 @@
-ghcr.io/yasns/u1-train:sha-a830574  1.03GB
+ghcr.io/yasns/u1-train:sha-7983c97  1.06GB
