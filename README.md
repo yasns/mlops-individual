@@ -60,7 +60,7 @@ Atkuria to run'o kodą (git), duomenis (DVC) ir parametrus, perleidžia pipeline
 | Pipeline'o metrikos | `metrics.json`, `dvc metrics show` |
 | Reikalavimai (FR, NFR, KPI) | `docs/requirements.md` |
 | Docker vaizdai | [`ghcr.io/yasns/u1-train`](https://github.com/users/yasns/packages/container/package/u1-train) |
-| Vaizdo dydis, Trivy skenavimas | `docs/image-sizes.md`, `docs/security-scan.md` |
+| Vaizdo dydis, Trivy skenavimas | `docs/image-size.txt`, `docs/trivy-scan.txt` |
 
 ## Išjungimas
 Dėmesio: ištrina ir visus MLflow run'us (PVC).
