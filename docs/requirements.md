@@ -23,8 +23,10 @@ Sistema prognozuoja, ar Spotify kūrinys yra "hitas" (`popularity >= 50`) arba "
 | NFR-05 | Saugumas | Docker vaizde nėra kritinių pažeidžiamumų | CRITICAL pažeidžiamumų (Trivy) = 0 |
 | NFR-06 | Versijavimas | Docker vaizdai žymimi commit'u, ne `latest` | Tag'ų `sha-<commit>` formatu = 100 % |
 | NFR-07 | Našumas | Pipeline'as įvykdomas greitai | `dvc repro -f` trukmė ≤ 120 s |
+| NFR-08 | Sąžiningumas | Hitai aptinkami vienodai visuose žanruose | TPR skirtumas tarp žanrų ≤ 20%. |
 
 ## 4. Keitimo istorija
 | Versija | Data | Autorius | Pakeitimai |
 |---------|------------|----------|--------------------|
 | 1.0 | 2026-10-21 | M. Jasiūnas | Pradinis dokumentas. Problemos aprašymas, FR-01..03, NFR-01..07 |
+| 1.1 | 2026-10-21 | M. Jasiūnas | Sąžiningumas. NFR-08 |
