@@ -9,14 +9,15 @@ stages:
       size: 9350164
     - path: src/prepare.py
       hash: md5
-      md5: 52f68b18d224cf3e195f348dd1016d76
-      size: 1272
+      md5: ca7f253bef008f788ed2f737098edae8
+      size: 1191
     params:
       params.yaml:
         data:
           target: popularity
           threshold: 50
           drop:
+          - 'Unnamed: 0'
           - track_id
           - artists
           - album_name
@@ -45,8 +46,8 @@ stages:
       size: 21641732
     - path: src/train.py
       hash: md5
-      md5: 7bc264bb6808fc78bed0c7cc3a4b6ece
-      size: 3646
+      md5: 36789714720c23c90590467660b84819
+      size: 3688
     params:
       params.yaml:
         train:
@@ -59,7 +60,7 @@ stages:
       size: 8305
     - path: models/run_id.txt
       hash: md5
-      md5: 84558fb7710de2031b36489c280f3d93
+      md5: 8d3aa90e2c7622b9f81440e9efa08ee9
       size: 33
   evaluate:
     cmd: python src/evaluate.py
@@ -72,14 +73,10 @@ stages:
       hash: md5
       md5: c73c0f2698f1a87fc796419050bf4de2
       size: 8305
-    - path: models/run_id.txt
-      hash: md5
-      md5: 84558fb7710de2031b36489c280f3d93
-      size: 33
     - path: src/evaluate.py
       hash: md5
-      md5: fe25ac0ed74eb85e90e19a52bad8d48d
-      size: 1485
+      md5: 1f555ae4b8884cef5df2f56132fe043d
+      size: 887
     outs:
     - path: metrics.json
       hash: md5

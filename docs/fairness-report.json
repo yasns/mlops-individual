@@ -1,6 +1,6 @@
 {
-  "git_commit": "d79ed046",
-  "mlflow_run_id": "bc023408497d4d1db1e6db9a287c1e0c",
+  "git_commit": "0205b229",
+  "mlflow_run_id": "522f4b64d8f74c31909980bbab59966b",
   "threshold": 0.2,
   "min_n": 100,
   "min_hits": 10,
