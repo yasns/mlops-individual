@@ -22,6 +22,10 @@ from sklearn.preprocessing import StandardScaler
 
 ROOT = Path(__file__).resolve().parents[1]
 
+# defaults are 10 s, batches of 10. our runs are shorter than that
+mlflow.set_system_metrics_sampling_interval(1)
+mlflow.set_system_metrics_samples_before_logging(1)
+
 
 def git_commit() -> str:
     if "GIT_COMMIT" in os.environ:
@@ -30,7 +34,7 @@ def git_commit() -> str:
         return subprocess.check_output(
             ["git", "rev-parse", "--short=8", "HEAD"], cwd=ROOT, text=True
         ).strip()
-    except Exception:
+    except (OSError, subprocess.CalledProcessError):  # no git / no .git in the image
         return "unknown"
 
 
@@ -38,12 +42,20 @@ def dvc_md5(dvc_file: Path) -> str:
     """md5 of the raw dataset as recorded by `dvc add` - the join key to dvc.lock."""
     try:
         return yaml.safe_load(dvc_file.read_text())["outs"][0]["md5"]
-    except Exception:
+    except (OSError, KeyError, TypeError):
         return "untracked"
 
 
+def build_model(C: float, max_iter: int, seed: int):
+    return make_pipeline(
+        StandardScaler(),
+        LogisticRegression(C=C, max_iter=max_iter, random_state=seed),
+    )
+
+
 def main() -> None:
-    params = yaml.safe_load((ROOT / "params.yaml").read_text())["train"]
+    cfg = yaml.safe_load((ROOT / "params.yaml").read_text())
+    params, seed = cfg["train"], cfg["data"]["seed"]
     parser = argparse.ArgumentParser()
     for key, value in params.items():
         parser.add_argument(f"--{key}", type=type(value))
@@ -59,13 +71,14 @@ def main() -> None:
     x_test, y_test = test.drop("target", axis=1), test["target"]
 
     run_name = f"logreg-C{params['C']}"
-    with mlflow.start_run(run_name=run_name) as run:
+    with mlflow.start_run(run_name=run_name, log_system_metrics=True) as run:
         mlflow.log_params(params)  # config
         mlflow.set_tags(
             {  # identities
                 "git_commit": git_commit(),
                 "dvc_raw_md5": dvc_md5(ROOT / "data/raw/data.parquet.dvc"),
                 "model_family": "LogisticRegression",
+                "seed": seed,
             }
         )
         mlflow.log_input(  # data provenance (name + digest)
@@ -75,18 +88,22 @@ def main() -> None:
             context="training",
         )
 
-        model = make_pipeline(
-            StandardScaler(),
-            LogisticRegression(C=params["C"], max_iter=params["max_iter"]),
-        )
+        # learning curve: step = training rows seen
+        for frac in (0.1, 0.25, 0.5, 0.75):
+            n = int(len(train) * frac)
+            m = build_model(params["C"], params["max_iter"], seed).fit(x_train[:n], y_train[:n])
+            mlflow.log_metric("test_f1", f1_score(y_test, m.predict(x_test), average="weighted"), step=n)
+
+        model = build_model(params["C"], params["max_iter"], seed)
         model.fit(x_train, y_train)
         preds = model.predict(x_test)
         metrics = {
             "accuracy": accuracy_score(y_test, preds),
             "f1": f1_score(y_test, preds, average="weighted"),
-            "precision": precision_score(y_test, preds),
+            "precision": precision_score(y_test, preds, zero_division=0),
             "recall": recall_score(y_test, preds),
         }
+        mlflow.log_metric("test_f1", metrics["f1"], step=len(train))
 
         info = mlflow.sklearn.log_model(  # model + environment files
             model,
@@ -98,7 +115,7 @@ def main() -> None:
         os.makedirs(ROOT / "models", exist_ok=True)
         joblib.dump(
             model, ROOT / "models/model.pkl"
-        )  # DVC-tracked artefact for later weeks
+        )
         (ROOT / "models/run_id.txt").write_text(run.info.run_id + "\n")
         print(
             f"run_id={run.info.run_id} model_id={info.model_id} accuracy={metrics['accuracy']:.4f} f1={metrics['f1']:.4f}"
