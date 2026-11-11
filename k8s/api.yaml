@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spotify-api
+  namespace: mlops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spotify-api
+  template:
+    metadata:
+      labels:
+        app: spotify-api
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/yasns/mlops-individual:sha-515e412 # bumped by CD
+          command: ["uvicorn", "src.serve:app", "--host", "0.0.0.0", "--port", "8000"]
+          env:
+            - name: MODEL_URI
+              value: models:/spotify-hits@champion
+          envFrom:
+            - secretRef:
+                name: mlflow-credentials
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          resources:
+            requests: { cpu: "250m", memory: "512Mi" }
+            limits: { cpu: "1", memory: "1Gi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spotify-api
+  namespace: mlops
+spec:
+  selector:
+    app: spotify-api
+  ports:
+    - port: 80
+      targetPort: 8000
