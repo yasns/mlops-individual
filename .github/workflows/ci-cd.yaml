@@ -1,0 +1,119 @@
+name: ci-cd
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency: cd # one deploy at a time
+
+env:
+  IMAGE: ghcr.io/yasns/mlops-individual
+  MLFLOW_TRACKING_URI: http://127.0.0.1:5001 # port-forward on the self-hosted runner
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt ruff pytest httpx
+      - run: ruff check src tests scripts
+      - run: pytest -q
+
+  train: # dvc repro against MLflow + quality gate
+    needs: test
+    if: github.event_name != 'pull_request'
+    runs-on: self-hosted
+    outputs:
+      run_id: ${{ steps.repro.outputs.run_id }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: venv (kept between runs)
+        run: |
+          test -x "$HOME/u2-venv/bin/python" || python3.12 -m venv "$HOME/u2-venv"
+          "$HOME/u2-venv/bin/pip" install -q -r requirements.txt
+          echo "$HOME/u2-venv/bin" >> "$GITHUB_PATH"
+      - name: port-forward MLflow
+        run: |
+          nohup kubectl port-forward -n mlops svc/mlflow 5001:5000 > /dev/null 2>&1 &
+          sleep 3
+      - id: repro
+        run: |
+          python src/fetch_data.py
+          dvc repro
+          echo "run_id=$(cat models/run_id.txt)" >> "$GITHUB_OUTPUT"
+      - name: quality gate
+        run: python src/gate.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pipeline
+          path: |
+            dvc.lock
+            metrics.json
+            models/run_id.txt
+
+  release: # image build/push + manifest bump
+    needs: train
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "TAG=sha-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          platforms: linux/amd64,linux/arm64 # kind on Apple Silicon runs arm64 nodes
+          build-args: GIT_COMMIT=${{ github.sha }}
+          tags: ${{ env.IMAGE }}:${{ env.TAG }}
+          push: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - uses: actions/download-artifact@v4
+        with:
+          name: pipeline
+      - name: bump manifests
+        run: |
+          sed -i "s|image: ghcr.io/yasns/[^ ]*|image: $IMAGE:$TAG|" k8s/api.yaml k8s/train-job.yaml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add k8s dvc.lock metrics.json models/run_id.txt
+          git diff --cached --quiet || git commit -m "deploy $TAG"
+          git push
+
+  deploy: # @champion -> new version, roll the API
+    needs: [train, release]
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main # includes the manifest bump
+      - run: echo "$HOME/u2-venv/bin" >> "$GITHUB_PATH"
+      - name: port-forward MLflow
+        run: |
+          nohup kubectl port-forward -n mlops svc/mlflow 5001:5000 > /dev/null 2>&1 &
+          sleep 3
+      - run: python src/promote.py ${{ needs.train.outputs.run_id }}
+      - run: |
+          kubectl apply -f k8s/train-config.yaml -f k8s/api.yaml
+          kubectl rollout restart deployment/spotify-api -n mlops # re-resolve @champion even if the image is unchanged
+          kubectl rollout status deployment/spotify-api -n mlops --timeout=300s
+      - name: smoke test
+        run: |
+          nohup kubectl port-forward -n mlops svc/spotify-api 8001:80 > /dev/null 2>&1 &
+          sleep 3
+          curl -fsS localhost:8001/health
