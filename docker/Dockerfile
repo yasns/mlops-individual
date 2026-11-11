@@ -14,5 +14,8 @@ RUN pip install --no-cache-dir --no-compile -r requirements-train.txt
 COPY --chown=mluser:mluser params.yaml ./
 COPY --chown=mluser:mluser src/ src/
 
+ARG GIT_COMMIT=unknown
+ENV GIT_COMMIT=$GIT_COMMIT
+
 USER mluser
 CMD ["python", "src/train.py"]

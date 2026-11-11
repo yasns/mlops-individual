@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: train-params
+  namespace: mlops
+data:
+  TRAIN_C: "0.347027"
+  TRAIN_MAX_ITER: "1000"
+  MLFLOW_EXPERIMENT_NAME: spotify-hits

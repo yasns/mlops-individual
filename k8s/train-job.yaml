@@ -11,12 +11,13 @@ spec:
       restartPolicy: Never
       containers:
         - name: train
-          image: ghcr.io/yasns/u1-train:sha-7983c97 # pinned
+          image: ghcr.io/yasns/mlops-individual:sha-515e412 # bumped by CD
+          envFrom:
+            - configMapRef:
+                name: train-params          # hyper-parameters
+            - secretRef:
+                name: mlflow-credentials    # currently MLFLOW_TRACKING_URI since basic-auth is not enabled
           env:
-            - name: GIT_COMMIT # = image tag, lets reproduce.py check out this code
-              value: 7983c97
-            - name: MLFLOW_TRACKING_URI
-              value: http://mlflow.mlops.svc.cluster.local:5000
             - name: HOME
               value: /tmp
           command: ["sh", "-c"]
@@ -25,7 +26,7 @@ spec:
               set -e
               python src/fetch_data.py
               python src/prepare.py
-              python src/train.py
+              python src/train.py --C "$TRAIN_C" --max_iter "$TRAIN_MAX_ITER"
           resources:
             requests: { cpu: "500m", memory: "1Gi" }
             limits: { cpu: "2", memory: "2Gi" }
