@@ -1,1 +1,2 @@
 ghcr.io/yasns/u1-train:sha-7983c97  1.06GB
+ghcr.io/yasns/mlops-individual:sha-0c456de  1.06GB (228MB compressed), CI build, linux/amd64 + linux/arm64
