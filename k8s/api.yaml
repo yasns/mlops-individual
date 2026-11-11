@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: ghcr.io/yasns/mlops-individual:sha-0c456de # bumped by CD
+          image: ghcr.io/yasns/mlops-individual:sha-27a353d # bumped by CD
           command: ["uvicorn", "src.serve:app", "--host", "0.0.0.0", "--port", "8000"]
           env:
             - name: MODEL_URI

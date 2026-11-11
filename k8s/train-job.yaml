@@ -11,7 +11,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: train
-          image: ghcr.io/yasns/mlops-individual:sha-0c456de # bumped by CD
+          image: ghcr.io/yasns/mlops-individual:sha-27a353d # bumped by CD
           envFrom:
             - configMapRef:
                 name: train-params          # hyper-parameters
