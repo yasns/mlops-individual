@@ -14,10 +14,10 @@ env:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
@@ -32,7 +32,7 @@ jobs:
     outputs:
       run_id: ${{ steps.repro.outputs.run_id }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: venv (kept between runs)
         run: |
           test -x "$HOME/u2-venv/bin/python" || python3.12 -m venv "$HOME/u2-venv"
@@ -59,12 +59,12 @@ jobs:
 
   release: # image build/push + manifest bump
     needs: train
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
       packages: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: echo "TAG=sha-${GITHUB_SHA::7}" >> "$GITHUB_ENV"
       - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
@@ -99,7 +99,7 @@ jobs:
     needs: [train, release]
     runs-on: self-hosted
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: main # includes the manifest bump
       - run: echo "$HOME/u2-venv/bin" >> "$GITHUB_PATH"
