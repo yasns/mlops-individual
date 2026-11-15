@@ -40,7 +40,7 @@ jobs:
           echo "$HOME/u2-venv/bin" >> "$GITHUB_PATH"
       - name: port-forward MLflow
         run: |
-          nohup kubectl port-forward -n mlops svc/mlflow 5001:5000 > /dev/null 2>&1 &
+          nohup kubectl --context kind-mlops port-forward -n mlops svc/mlflow 5001:5000 > /dev/null 2>&1 &
           sleep 3
       - id: repro
         run: |
@@ -105,15 +105,15 @@ jobs:
       - run: echo "$HOME/u2-venv/bin" >> "$GITHUB_PATH"
       - name: port-forward MLflow
         run: |
-          nohup kubectl port-forward -n mlops svc/mlflow 5001:5000 > /dev/null 2>&1 &
+          nohup kubectl --context kind-mlops port-forward -n mlops svc/mlflow 5001:5000 > /dev/null 2>&1 &
           sleep 3
       - run: python src/promote.py ${{ needs.train.outputs.run_id }}
       - run: |
-          kubectl apply -f k8s/train-config.yaml -f k8s/api.yaml
-          kubectl rollout restart deployment/spotify-api -n mlops # re-resolve @champion even if the image is unchanged
-          kubectl rollout status deployment/spotify-api -n mlops --timeout=300s
+          kubectl --context kind-mlops apply -f k8s/train-config.yaml -f k8s/api.yaml
+          kubectl --context kind-mlops rollout restart deployment/spotify-api -n mlops # re-resolve @champion even if the image is unchanged
+          kubectl --context kind-mlops rollout status deployment/spotify-api -n mlops --timeout=300s
       - name: smoke test
         run: |
-          nohup kubectl port-forward -n mlops svc/spotify-api 8001:80 > /dev/null 2>&1 &
+          nohup kubectl --context kind-mlops port-forward -n mlops svc/spotify-api 8001:80 > /dev/null 2>&1 &
           sleep 3
           curl -fsS localhost:8001/health

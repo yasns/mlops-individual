@@ -40,8 +40,18 @@ kubectl port-forward -n mlops svc/mlflow 5000:5000
 MLflow UI: http://127.0.0.1:5000
 
 ### 5. Pipeline'as
+`MLFLOW_TRACKING_URI` nustatomas `.envrc` faile. 
+
+a) Jei naudojate direnv: 
 ```bash
-export MLFLOW_TRACKING_URI=http://127.0.0.1:5000 # Jei turite direnv, galite šią komandą praleisti
+direnv allow
+```
+b) Be direnv: 
+```bash 
+source .envrc
+```
+Tada:
+```bash
 dvc repro
 ```
 Jei niekas nepasikeitė, `dvc repro` praleidžia visus etapus. Naujam run'ui su tais pačiais parametrais – `dvc repro -f`.
